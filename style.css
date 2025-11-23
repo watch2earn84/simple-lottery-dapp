@@ -1,21 +1,56 @@
-# Query:  body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }\n  h1 { text-align: center; color: #222; margin-bottom: 20px; }\n  .card { background: #fff; padding: 20px; margin: 15px auto; max-width: 500px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }\n  button { padding: 10px 20px; margin-top: 10px; border-radius: 8px; border: none; cursor: pointer; background-color: #4caf50; color: #fff; font-size: 16px; }\n  button:disabled { background-color: #ccc; cursor: not-allowed; }\n  input { padding: 10px; width: 100%; font-size: 16px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }\n  .status { margin-top: 10px; padding: 10px; background: #eef; border-radius: 8px; text-align: center; word-break: break-all; }\n  .ticket-list { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin-top: 10px; }\n  .ticket { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #eee; }\n  .winner { background-color: #fff3cd; font-weight: bold; border-radius: 5px; padding: 3px; }\n</style>
-# ContextLines: 1
+/* ========================= */
+/* Base Lottery DApp Styles  */
+/* ========================= */
 
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    padding: 20px;
+}
 
-   7:   body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-   8:   h1 { text-align: center; color: #222; margin-bottom: 20px; }
-   9:   .card { background: #fff; padding: 20px; margin: 15px auto; max-width: 500px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-  10:   button { padding: 10px 20px; margin-top: 10px; border-radius: 8px; border: none; cursor: pointer; background-color: #4caf50; color: #fff; font-size: 16px; }
-  11:   button:disabled { background-color: #ccc; cursor: not-allowed; }
-  12:   input { padding: 10px; width: 100%; font-size: 16px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }
-  13:   .status { margin-top: 10px; padding: 10px; background: #eef; border-radius: 8px; text-align: center; word-break: break-all; }
-  14:   .ticket-list { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin-top: 10px; }
-  15:   .ticket { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #eee; }
-  16:   .winner { background-color: #fff3cd; font-weight: bold; border-radius: 5px; padding: 3px; }
-  17: </style>
-  18  </head><head>
-  <meta charset="utf-8">
-  <title>Simple Lottery DApp</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+.container {
+    max-width: 500px;
+    margin: auto;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
+h2, h3 {
+    text-align: center;
+}
+
+input, button {
+    padding: 10px;
+    margin: 8px 0;
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+span {
+    font-weight: bold;
+}
+
+#firstTicketDisplay {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    word-break: break-all;
+}
