@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <head>
     <meta charset="UTF-8">
-    <title>Base Lottery DApp</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Chain Lottery DApp</title>
     <link rel="stylesheet" href="style.css">
-</head>
-
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.min.js"></script>
 </head>
 <body>
-<div class="container">
-    <h2>Base Lottery DApp</h2>
-    <p>Round ID: <span id="roundIdDisplay">Loading...</span></p>
-    <p>Ticket Price: <span id="priceDisplay">Loading...</span></p>
+    <div class="container">
+        <h1>Base Chain Lottery DApp</h1>
 
-    <input id="chosenNumberInput" type="number" placeholder="Enter your number">
-    <button id="buyBtn">Buy Ticket</button>
-    <button id="checkFirstBtn">Check First Ticket</button>
+        <div class="info">
+            <p>Round ID: <span id="roundIdDisplay">Loading...</span></p>
+            <p>Ticket Price: <span id="priceDisplay">Loading...</span></p>
+            <p>First Ticket: <span id="firstTicketDisplay">Loading...</span></p>
+        </div>
 
-    <h3>First Ticket:</h3>
-    <div id="firstTicketDisplay">Loading...</div>
-</div>
+        <div class="actions">
+            <input type="number" id="chosenNumberInput" placeholder="Enter your number">
+            <button id="buyBtn">Buy Ticket</button>
+            <button id="checkFirstBtn">Check First Ticket</button>
+        </div>
 
-<script src="script.js"></script>
+        <p class="footer">Connect MetaMask to interact with the contract on Base Sepolia</p>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
-
