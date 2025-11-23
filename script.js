@@ -409,41 +409,39 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     document.getElementById('buyTicket').addEventListener('click', buyTicket);
     document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
-});
-async function connectWallet() {
+});async function connectWallet() {
     try {
         if (!window.ethereum) {
             alert("MetaMask not detected!");
             return;
         }
 
-        // Initialize provider and signer
-        provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = await provider.getSigner();
+        // Request accounts
+        await window.ethereum.request({ method: "eth_requestAccounts" });
 
-        // Initialize contract
+        // Setup provider & signer
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-        // Get connected account
         const accounts = await provider.listAccounts();
-
         if (accounts && accounts.length > 0) {
-            // Ensure it's a string
-            const account = accounts[0].toString();
-            const shortAddress = `${account.slice(0,6)}...${account.slice(-4)}`;
+            const account = String(accounts[0]);  // <- ensure string
+            const shortAddress = `${account.slice(0, 6)}...${account.slice(-4)}`;
 
-            // Update button
-            const connectButton = document.getElementById('connectWallet');
-            connectButton.innerText = `Connected: ${shortAddress}`;
-            connectButton.disabled = true;
+            const btn = document.getElementById('connectWallet');
+            btn.innerText = `Connected: ${shortAddress}`;
+            btn.disabled = true;
 
-            // Optional: show full wallet address in status
+            // Optional display of full address
             const statusEl = document.getElementById('walletStatus');
-            if(statusEl){
-                statusEl.innerText = `Wallet: ${account}`;
-            }
+            if(statusEl) statusEl.innerText = `Wallet: ${account}`;
         }
+
+    } catch (err) {
+        console.error("Wallet connection error:", err);
+    }
+ }
 
         // Refresh round info
         await updateRoundInfo();
