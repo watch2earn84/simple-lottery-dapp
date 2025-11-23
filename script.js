@@ -1,10 +1,11 @@
-# Query: script.js
-# ContextLines: 1
+/* script.js - ethers.js based, drop into your page (make sure ethers is loaded) */
 
-No Results
-// 
-const contractAddress = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
-const contractABI = [ /* [
+/* == INCLUDE ethers in your HTML (if not using bundler):
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+*/
+
+/* ====== PASTE YOUR ABI ARRAY BELOW (make sure it's an actual JS array, not a quoted JSON string) ====== */
+const ABI = /* [
 	{
 		"inputs": [
 			{
@@ -401,107 +402,167 @@ const contractABI = [ /* [
 		"stateMutability": "view",
 		"type": "function"
 	}
-] */ ];
-// ================================================
+] */;
+/* Example: const ABI = [ { "inputs": [...], "name": "buyTicket", ... }, ... ]; */
 
-let provider, signer, contract;
-let currentRound;
+
+const ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
+
+let provider, signer, contract, currentAccount;
+
+function isAbiValid(a) {
+  return Array.isArray(a) && a.length > 0 && typeof a[0] === "object";
+}
+
+/* quick BOM/stray-checker for ABI string edge-cases (only needed if you load ABI as string) */
+function stripLeadingBOMIfString(x) {
+  if (typeof x === "string") {
+    return x.replace(/^\uFEFF/, "");
+  }
+  return x;
+}
 
 async function init() {
-    if(!window.ethereum){ alert("MetaMask not installed"); return; }
+  try {
+    // Basic sanity checks for ABI/ADDRESS
+    if (!isAbiValid(ABI)) {
+      console.error("ABI is not a valid JS array. Make sure you pasted the ABI as a JavaScript array (not a JSON string) and there are no stray BOM chars.");
+      console.log("ABI type:", typeof ABI, "isArray:", Array.isArray(ABI));
+      return;
+    }
+    if (!ADDRESS || ADDRESS === "0xYourContractAddressHere") {
+      console.error("Please set ADDRESS to your deployed contract address.");
+      return;
+    }
+
+    // Provider
+    if (!window.ethereum) {
+      console.error("No wallet provider found. Install MetaMask or another web3 provider.");
+      return;
+    }
+
+    await window.ethereum.request({ method: "eth_requestAccounts" });
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
-    contract = new ethers.Contract(contractAddress, contractABI, signer);
+    currentAccount = await signer.getAddress();
 
-    await connectWallet();
-    await updateRoundInfo();
-    setupEventListeners();
-}
+    // Instantiate contract
+    contract = new ethers.Contract(ADDRESS, ABI, signer);
 
-async function connectWallet() {
-    const accounts = await provider.send("eth_requestAccounts", []);
-    document.getElementById("walletStatus").innerText = "Connected: " + accounts[0];
-}
+    // Diagnostics: show what's on the contract object
+    console.log("Contract instantiated:", contract);
+    console.log("Contract keys:", Object.keys(contract || {}));
+    if (contract.functions) console.log("Contract.functions keys:", Object.keys(contract.functions));
+    if (contract.interface) console.log("Contract interface functions:", Object.keys(contract.interface.functions));
 
-async function updateRoundInfo() {
-    currentRound = (await contract.roundId()).toNumber();
-    document.getElementById("roundId").innerText = currentRound;
+    // Quick existence tests for common getters
+    const hasRoundId = (typeof contract.roundId === "function") || (contract.functions && contract.functions.roundId);
+    const hasTicketPrice = (typeof contract.ticketPrice === "function") || (contract.functions && contract.functions.ticketPrice);
+    console.log("has roundId getter?", !!hasRoundId);
+    console.log("has ticketPrice getter?", !!hasTicketPrice);
 
-    const open = await contract.roundOpen(currentRound);
-    document.getElementById("roundOpen").innerText = open;
-    document.getElementById("pickWinnerBtn").disabled = open;
-    document.getElementById("closeRoundBtn").disabled = !open;
-
-    const count = (await contract.ticketsCount(currentRound)).toNumber();
-    document.getElementById("ticketsCount").innerText = count;
-
-    await updateTicketsList();
-}
-
-async function updateTicketsList() {
-    const listDiv = document.getElementById("ticketsList");
-    listDiv.innerHTML = "";
-    const count = (await contract.ticketsCount(currentRound)).toNumber();
-    for(let i=0;i<count;i++){
-        const ticket = await contract.tickets(currentRound, i);
-        const div = document.createElement("div");
-        div.className = "ticket";
-        div.innerHTML = `<span>${ticket.buyer}</span><span>${ticket.number}</span>`;
-        listDiv.appendChild(div);
+    // Try reading values (wrapped in try/catch to show informative errors)
+    try {
+      if (hasRoundId) {
+        const ridBn = await contract.roundId();
+        console.log("roundId:", ridBn.toString());
+        document.getElementById("roundIdDisplay")?.textContent = ridBn.toString();
+      } else {
+        console.warn("roundId() getter not detected on contract. Check ABI/address/instantiation.");
+      }
+    } catch (err) {
+      console.error("Error reading roundId():", err);
     }
-}
-
-// ===== Buy Ticket =====
-document.getElementById("buyBtn").onclick = async () => {
-    const num = parseInt(document.getElementById("ticketNumber").value);
-    if(isNaN(num)){ alert("Enter a valid number"); return; }
 
     try {
-        const price = await contract.ticketPrice();
-        const tx = await contract.buyTicket(num, { value: price });
-        document.getElementById("buyStatus").innerText = "Buying ticket...";
-        await tx.wait();
-        document.getElementById("buyStatus").innerText = "Ticket bought!";
-        await updateRoundInfo();
-    } catch(e){ console.error(e); document.getElementById("buyStatus").innerText = "Error: " + e.message; }
-};
+      if (hasTicketPrice) {
+        const priceBn = await contract.ticketPrice();
+        console.log("ticketPrice (wei):", priceBn.toString(), "ETH:", ethers.utils.formatEther(priceBn));
+        document.getElementById("priceDisplay")?.textContent = ethers.utils.formatEther(priceBn);
+      } else {
+        console.warn("ticketPrice() getter not detected on contract. Check ABI/address/instantiation.");
+      }
+    } catch (err) {
+      console.error("Error reading ticketPrice():", err);
+    }
 
-// ===== Close Round =====
-document.getElementById("closeRoundBtn").onclick = async () => {
-    try{ const tx = await contract.closeRound(); await tx.wait(); await updateRoundInfo(); }
-    catch(e){ console.error(e); alert(e.message); }
-};
-
-// ===== Pick Winner =====
-document.getElementById("pickWinnerBtn").onclick = async () => {
-    try{
-        const tx = await contract.pickWinner(0, true);
-        const receipt = await tx.wait();
-
-        const event = receipt.events.find(e => e.event === "WinnerPaid");
-        const [rid, winner, payout, fee] = event.args;
-
-        document.getElementById("winnerAddr").innerText = winner;
-        document.getElementById("payout").innerText = ethers.utils.formatEther(payout);
-
-        const count = (await contract.ticketsCount(rid)).toNumber();
-        let winningNumber = "-";
-        for(let i=0;i<count;i++){
-            const ticket = await contract.tickets(rid, i);
-            if(ticket.buyer.toLowerCase() === winner.toLowerCase()){ winningNumber = ticket.number; break; }
-        }
-        document.getElementById("winningTicket").innerText = winningNumber;
-
-        await updateRoundInfo();
-    } catch(e){ console.error(e); alert(e.message); }
-};
-
-// ===== Events =====
-function setupEventListeners() {
-    contract.on("TicketBought", async (rid, idx, buyer)=>{ if(rid.toNumber()===currentRound) await updateTicketsList(); });
-    contract.on("RoundClosed", async (rid)=>{ if(rid.toNumber()===currentRound) await updateRoundInfo(); });
-    contract.on("WinnerPaid", async (rid,winner,payout,fee)=>{ if(rid.toNumber()===currentRound) await updateRoundInfo(); });
+  } catch (err) {
+    console.error("init error:", err);
+  }
 }
 
-init();
+/* ====== Example safe buy button handler (assumes an input with id 'chosenNumberInput' and button id 'buyBtn') ====== */
+async function handleBuyBtnClick() {
+  if (!contract) {
+    console.error("contract not initialized");
+    return;
+  }
+  const input = document.getElementById("chosenNumberInput");
+  const chosenNumber = input ? Number(input.value) : NaN;
+  if (!Number.isFinite(chosenNumber)) {
+    alert("Please enter a valid number");
+    return;
+  }
 
+  try {
+    // read ticket price
+    const priceBn = await contract.ticketPrice();
+    console.log("buyTicket will send value (wei):", priceBn.toString());
+
+    // send transaction
+    const tx = await contract.buyTicket(chosenNumber, { value: priceBn });
+    console.log("Transaction submitted:", tx.hash);
+    // Optionally update UI to show pending state
+    await tx.wait();
+    console.log("Transaction mined");
+    alert("Ticket purchased!");
+  } catch (err) {
+    console.error("buyTicket failed:", err);
+    alert("buyTicket error: " + (err && err.message ? err.message : err));
+  }
+}
+
+/* ====== Example: show first ticket for current round (useful sanity check) ====== */
+async function showFirstTicket() {
+  if (!contract) return;
+  try {
+    const ridBn = await contract.roundId();
+    const rid = ridBn.toString();
+    const cntBn = await contract.ticketsCount(ridBn);
+    const cnt = cntBn.toNumber();
+    console.log("Round", rid, "ticketsCount:", cnt);
+    if (cnt > 0) {
+      const ticket = await contract.tickets(ridBn, 0);
+      // ticket may be returned as an object with properties buyer and number
+      console.log("first ticket:", ticket);
+      const buyer = ticket.buyer || ticket[0];
+      const number = (ticket.number || ticket[1]).toString();
+      document.getElementById("firstTicketDisplay")?.textContent = `buyer: ${buyer}, number: ${number}`;
+    } else {
+      document.getElementById("firstTicketDisplay")?.textContent = "No tickets yet";
+    }
+  } catch (err) {
+    console.error("showFirstTicket err:", err);
+  }
+}
+
+/* ====== attach event handlers after DOM ready ====== */
+window.addEventListener("DOMContentLoaded", () => {
+  // init contract and UI
+  init();
+
+  // wire buttons - change IDs to match your HTML
+  const buyBtn = document.getElementById("buyBtn");
+  if (buyBtn) buyBtn.addEventListener("click", () => { handleBuyBtnClick(); });
+
+  const checkFirstBtn = document.getElementById("checkFirstBtn");
+  if (checkFirstBtn) checkFirstBtn.addEventListener("click", () => { showFirstTicket(); });
+
+  // small convenience: allow pressing Enter on input to buy
+  const chosenInput = document.getElementById("chosenNumberInput");
+  if (chosenInput) {
+    chosenInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleBuyBtnClick();
+    });
+  }
+});
