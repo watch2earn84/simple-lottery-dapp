@@ -1,3 +1,53 @@
+// Ensure DOM is loaded
+window.addEventListener("DOMContentLoaded", () => {
+
+    let provider;
+    let signer;
+    let userAddress;
+
+    const connectBtn = document.getElementById("connectWalletBtn");
+    const walletStatus = document.getElementById("walletStatus"); // optional display
+
+    if (!connectBtn) {
+        console.error("Connect Wallet button not found!");
+        return;
+    }
+
+    connectBtn.addEventListener("click", async () => {
+        try {
+            if (!window.ethereum) {
+                alert("MetaMask not detected. Please install MetaMask.");
+                return;
+            }
+
+            provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+
+            if (!accounts || accounts.length === 0) {
+                console.error("No accounts found");
+                return;
+            }
+
+            userAddress = accounts[0];
+
+            // Shorten address like 0x1234...abcd
+            const shortAddress = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+
+            connectBtn.textContent = "Connected: " + shortAddress;
+
+            if (walletStatus) {
+                walletStatus.textContent = "Wallet: " + userAddress;
+            }
+
+            console.log("Wallet connected:", userAddress);
+
+        } catch (err) {
+            console.error("Wallet connection error:", err);
+            alert("Failed to connect wallet: " + (err.message || err));
+        }
+    });
+});
 const contractAddress = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e"; 
 const abi = [
 	{
