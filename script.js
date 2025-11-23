@@ -1,6 +1,6 @@
 // === CONFIG ===
 const CONTRACT_ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
-const CONTRACT_ABI = [ /*[
+const CONTRACT_ABI = [ /* [
 	{
 		"inputs": [
 			{
@@ -397,7 +397,7 @@ const CONTRACT_ABI = [ /*[
 		"stateMutability": "view",
 		"type": "function"
 	}
-]  */ ];
+] */ ];
 
 let provider, signer, contract;
 
@@ -413,20 +413,28 @@ const walletStatus = document.getElementById("walletStatus");
 
 // === CONNECT WALLET ===
 async function connectWallet() {
-    if (!window.ethereum) {
-        alert("MetaMask not detected!");
-        return;
+    try {
+        if (!window.ethereum) {
+            alert("MetaMask not detected!");
+            return;
+        }
+
+        // Initialize provider and signer
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+
+        // Initialize contract
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        const userAddress = await signer.getAddress();
+        walletStatus.textContent = `Wallet: ${userAddress}`;
+
+        await updateRoundInfo();
+    } catch (err) {
+        console.error("connectWallet error:", err);
+        alert("Error connecting wallet. See console.");
     }
-
-    provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-    const userAddress = await signer.getAddress();
-    walletStatus.textContent = `Wallet: ${userAddress}`;
-
-    await updateRoundInfo();
 }
 
 // === UPDATE ROUND INFO ===
@@ -434,7 +442,7 @@ async function updateRoundInfo() {
     try {
         const roundId = await contract.roundId();
         const ticketPrice = await contract.ticketPrice();
-        const firstTicket = await contract.tickets(0,0);
+        const firstTicket = await contract.tickets(0, 0);
 
         roundIdDisplay.textContent = roundId.toString();
         priceDisplay.textContent = ethers.formatEther(ticketPrice) + " ETH";
