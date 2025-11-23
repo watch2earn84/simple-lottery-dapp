@@ -5,26 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Base Chain Lottery DApp</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Ethers.js UMD version -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.umd.min.js"></script>
+    <!-- Ethers.js UMD for browser -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>Base Chain Lottery</h1>
 
-        <div class="info">Round ID: <span id="roundId">Loading...</span></div>
-        <div class="info">Ticket Price: <span id="ticketPrice">Loading...</span> ETH</div>
-        <div class="info">First Ticket Buyer: <span id="firstTicket">Loading...</span></div>
-
-        <input type="number" id="ticketNumber" placeholder="Enter your number" min="1" max="100">
-
+        <!-- Wallet Connection -->
         <button id="connectWalletBtn">Connect Wallet</button>
-        <button id="buyTicketBtn">Buy Ticket</button>
-        <button id="checkFirstTicketBtn">Check First Ticket</button>
+        <div id="walletStatus"></div>
 
-        <div class="info" id="walletStatus">Wallet: Not connected</div>
+        <!-- Round Info -->
+        <div class="info">
+            <p id="roundInfo">Round ID: Loading...</p>
+            <p id="ticketPriceInfo">Ticket Price: Loading...</p>
+            <p id="ticketsCountInfo">Tickets Sold: Loading...</p>
+        </div>
+
+        <!-- Buy Ticket -->
+        <div class="buy-ticket">
+            <input id="chosenNumberInput" type="number" placeholder="Enter your number" min="1">
+            <button id="buyTicketBtn">Buy Ticket</button>
+        </div>
+
+        <!-- Pick Winner (optional, admin only) -->
+        <div class="admin-controls">
+            <button id="pickWinnerBtn">Pick Winner</button>
+        </div>
+
+        <!-- Notifications / Messages -->
+        <div id="messages"></div>
     </div>
 
+    <!-- Your script -->
     <script src="script.js"></script>
 </body>
 </html>
