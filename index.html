@@ -1,129 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Base Chain Lottery DApp</title>
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-    body {
-        font-family: 'Inter', sans-serif;
-        background: #f5f5f5;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        align-items: center;
-    }
-    header {
-        width: 100%;
-        background: #4b2d89;
-        color: white;
-        padding: 1rem 0;
-        text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    header h1 {
-        margin: 0;
-        font-size: 1.8rem;
-    }
-    .container {
-        width: 95%;
-        max-width: 500px;
-        margin-top: 2rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    .card {
-        background: white;
-        padding: 1rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .card h2 {
-        margin-top: 0;
-        font-size: 1.2rem;
-        color: #4b2d89;
-    }
-    .card p {
-        font-size: 1rem;
-        margin: 0.5rem 0;
-    }
-    button {
-        width: 100%;
-        padding: 0.8rem;
-        background: #4b2d89;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.3s;
-    }
-    button:hover {
-        background: #341c5e;
-    }
-    input[type="number"] {
-        width: 100%;
-        padding: 0.7rem;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    .wallet {
-        text-align: center;
-        margin: 1rem 0;
-        font-weight: 600;
-    }
-    @media(max-width: 400px){
-        .card h2 { font-size: 1rem; }
-        button { font-size: 0.95rem; padding: 0.6rem; }
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Chain Lottery DApp</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Ethers.js UMD version -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.umd.min.js"></script>
 </head>
 <body>
-<header>
-    <h1>Base Chain Lottery DApp</h1>
-</header>
+    <div class="container">
+        <h1>Base Chain Lottery</h1>
 
-<div class="container">
+        <div class="info">Round ID: <span id="roundId">Loading...</span></div>
+        <div class="info">Ticket Price: <span id="ticketPrice">Loading...</span> ETH</div>
+        <div class="info">First Ticket Buyer: <span id="firstTicket">Loading...</span></div>
 
-    <div class="card">
-        <h2>Wallet</h2>
-        <p class="wallet-status">Not Connected</p>
+        <input type="number" id="ticketNumber" placeholder="Enter your number" min="1" max="100">
+
         <button id="connectWalletBtn">Connect Wallet</button>
-        <p class="wallet-address"></p>
-    </div>
-
-    <div class="card">
-        <h2>Round Info</h2>
-        <p>Round ID: <span id="roundId">Loading...</span></p>
-        <p>Ticket Price: <span id="ticketPrice">Loading...</span> ETH</p>
-        <p>Total Tickets: <span id="ticketsCount">Loading...</span></p>
-    </div>
-
-    <div class="card">
-        <h2>Buy Ticket</h2>
-        <input type="number" id="chosenNumber" placeholder="Choose your number" min="0">
         <button id="buyTicketBtn">Buy Ticket</button>
-    </div>
-
-    <div class="card">
-        <h2>Check First Ticket</h2>
         <button id="checkFirstTicketBtn">Check First Ticket</button>
-        <p>First Ticket Buyer: <span id="firstTicketBuyer">Loading...</span></p>
-        <p>First Ticket Number: <span id="firstTicketNumber">Loading...</span></p>
+
+        <div class="info" id="walletStatus">Wallet: Not connected</div>
     </div>
 
-</div>
-
-<!-- Ethers.js UMD -->
-<script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
-<!-- Updated script -->
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
