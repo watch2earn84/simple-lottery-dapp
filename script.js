@@ -410,7 +410,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('buyTicket').addEventListener('click', buyTicket);
     document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
 });
-
 async function connectWallet() {
     try {
         if (!window.ethereum) {
@@ -428,20 +427,32 @@ async function connectWallet() {
 
         // Get connected account
         const accounts = await provider.listAccounts();
-        if (accounts.length > 0) {
-            const shortAddress = `${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`;
 
-            // Update the button text
+        if (accounts && accounts.length > 0) {
+            // Ensure it's a string
+            const account = accounts[0].toString();
+            const shortAddress = `${account.slice(0,6)}...${account.slice(-4)}`;
+
+            // Update button
             const connectButton = document.getElementById('connectWallet');
             connectButton.innerText = `Connected: ${shortAddress}`;
-            connectButton.disabled = true; // optional: prevent clicking again
+            connectButton.disabled = true;
 
-            // Optional: show address somewhere else in HTML
+            // Optional: show full wallet address in status
             const statusEl = document.getElementById('walletStatus');
             if(statusEl){
-                statusEl.innerText = `Wallet: ${accounts[0]}`;
+                statusEl.innerText = `Wallet: ${account}`;
             }
         }
+
+        // Refresh round info
+        await updateRoundInfo();
+
+    } catch (err) {
+        console.error("Wallet connection error:", err);
+        alert("Failed to connect wallet. See console for details.");
+    }
+ }
 
         // Refresh round info after connecting
         await updateRoundInfo();
