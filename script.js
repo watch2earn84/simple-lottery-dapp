@@ -5,7 +5,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let signer;
     let userAddress;
 
-    const connectBtn = document.getElementById("connectWalletBtn");
+const btn = document.getElementById("connectWalletBtn");
     const walletStatus = document.getElementById("walletStatus"); // optional display
 
     if (!connectBtn) {
