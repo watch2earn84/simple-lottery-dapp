@@ -1,8 +1,5 @@
-// Replace with your contract address
-const CONTRACT_ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
-
-// Paste your ABI here
-const ABI =[
+const contractAddress = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e"; 
+const abi = [
 	{
 		"inputs": [
 			{
@@ -405,80 +402,77 @@ let provider;
 let signer;
 let contract;
 
-window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('connectWallet').addEventListener('click', connectWallet);
-    document.getElementById('buyTicket').addEventListener('click', buyTicket);
-    document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
-});
+const connectWalletBtn = document.getElementById('connectWalletBtn');
+const walletStatus = document.querySelector('.wallet-status');
+const walletAddress = document.querySelector('.wallet-address');
+const roundIdSpan = document.getElementById('roundId');
+const ticketPriceSpan = document.getElementById('ticketPrice');
+const ticketsCountSpan = document.getElementById('ticketsCount');
+const firstTicketBuyerSpan = document.getElementById('firstTicketBuyer');
+const firstTicketNumberSpan = document.getElementById('firstTicketNumber');
+const buyTicketBtn = document.getElementById('buyTicketBtn');
+const checkFirstTicketBtn = document.getElementById('checkFirstTicketBtn');
+const chosenNumberInput = document.getElementById('chosenNumber');
 
+// Connect wallet
 async function connectWallet() {
     try {
         if (!window.ethereum) {
-            alert("MetaMask not detected!");
+            alert("MetaMask is required!");
             return;
         }
-
         provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
+        const accounts = await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
-
-        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-        alert("Wallet connected!");
-        await updateRoundInfo();
+        walletStatus.textContent = "Connected";
+        walletAddress.textContent = accounts[0];
+        contract = new ethers.Contract(contractAddress, abi, signer);
+        updateRoundInfo();
     } catch (err) {
         console.error("Wallet connection error:", err);
     }
 }
 
+// Update round info
 async function updateRoundInfo() {
-    if (!contract) return;
-
     try {
-        const round = await contract.roundId();
-        const price = await contract.ticketPrice();
+        const roundId = await contract.roundId();
+        const ticketPrice = await contract.ticketPrice();
+        const ticketsCount = await contract.ticketsCount(roundId);
 
-        document.getElementById('roundId').innerText = round.toString();
-        document.getElementById('ticketPrice').innerText = ethers.formatEther(price) + " ETH";
-
-        const firstTicket = await contract.tickets(0, 0);
-        document.getElementById('firstTicket').innerText = firstTicket?.buyer || "No ticket yet";
+        roundIdSpan.textContent = roundId.toString();
+        ticketPriceSpan.textContent = ethers.formatEther(ticketPrice);
+        ticketsCountSpan.textContent = ticketsCount.toString();
     } catch (err) {
         console.error("Error updating round info:", err);
     }
 }
 
-async function connectWallet() {
+// Buy ticket
+async function buyTicket() {
     try {
-        if (!window.ethereum) {
-            alert("MetaMask not detected!");
-            return;
-        }
-
-        // Request accounts
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-
-        // Setup provider & signer
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-        const accounts = await provider.listAccounts();
-        if (accounts && accounts.length > 0) {
-            const account = String(accounts[0]);  // <- ensure string
-            const shortAddress = `${account.slice(0, 6)}...${account.slice(-4)}`;
-
-            const btn = document.getElementById('connectWallet');
-            btn.innerText = `Connected: ${shortAddress}`;
-            btn.disabled = true;
-
-            // Optional display of full address
-            const statusEl = document.getElementById('walletStatus');
-            if(statusEl) statusEl.innerText = `Wallet: ${account}`;
-        }
-
+        const chosenNumber = chosenNumberInput.value;
+        const price = await contract.ticketPrice();
+        const tx = await contract.buyTicket(chosenNumber, { value: price });
+        await tx.wait();
+        alert("Ticket bought successfully!");
+        updateRoundInfo();
     } catch (err) {
-        console.error("Wallet connection error:", err);
+        console.error("buyTicket error:", err);
     }
 }
 
+// Check first ticket
+async function checkFirstTicket() {
+    try {
+        const buyer = await contract.tickets(0, 0);
+        firstTicketBuyerSpan.textContent = buyer.buyer;
+        firstTicketNumberSpan.textContent = buyer.number.toString();
+    } catch (err) {
+        console.error("Error checking first ticket:", err);
+    }
+}
+
+connectWalletBtn.onclick = connectWallet;
+buyTicketBtn.onclick = buyTicket;
+checkFirstTicketBtn.onclick = checkFirstTicket;
