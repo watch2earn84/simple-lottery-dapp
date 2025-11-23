@@ -399,7 +399,6 @@ const ABI = [
 		"stateMutability": "view",
 		"type": "function"
 	}
-]
 ];
 
 // Global variables
