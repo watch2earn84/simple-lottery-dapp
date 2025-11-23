@@ -409,7 +409,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     document.getElementById('buyTicket').addEventListener('click', buyTicket);
     document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
-});
+}
 async function connectWallet() {
     try {
         if (!window.ethereum) {
