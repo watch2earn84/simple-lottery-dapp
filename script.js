@@ -409,7 +409,45 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     document.getElementById('buyTicket').addEventListener('click', buyTicket);
     document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
+});
+
+async function connectWallet() {
+    try {
+        if (!window.ethereum) {
+            alert("MetaMask not detected!");
+            return;
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+        alert("Wallet connected!");
+        await updateRoundInfo();
+    } catch (err) {
+        console.error("Wallet connection error:", err);
+    }
 }
+
+async function updateRoundInfo() {
+    if (!contract) return;
+
+    try {
+        const round = await contract.roundId();
+        const price = await contract.ticketPrice();
+
+        document.getElementById('roundId').innerText = round.toString();
+        document.getElementById('ticketPrice').innerText = ethers.formatEther(price) + " ETH";
+
+        const firstTicket = await contract.tickets(0, 0);
+        document.getElementById('firstTicket').innerText = firstTicket?.buyer || "No ticket yet";
+    } catch (err) {
+        console.error("Error updating round info:", err);
+    }
+}
+
 async function connectWallet() {
     try {
         if (!window.ethereum) {
@@ -442,60 +480,5 @@ async function connectWallet() {
     } catch (err) {
         console.error("Wallet connection error:", err);
     }
- }
-
-        // Refresh round info
-        await updateRoundInfo();
-
-    } catch (err) {
-        console.error("Wallet connection error:", err);
-        alert("Failed to connect wallet. See console for details.");
-    }
- }
-
-        // Refresh round info after connecting
-        await updateRoundInfo();
-
-    } catch (err) {
-        console.error("Wallet connection error:", err);
-        alert("Failed to connect wallet. See console for details.");
-    }
 }
 
-
-async function updateRoundInfo() {
-    if (!contract) return;
-
-    try {
-        const round = await contract.roundId();
-        const price = await contract.ticketPrice();
-
-        document.getElementById('roundId').innerText = round.toString();
-        document.getElementById('ticketPrice').innerText = ethers.formatEther(price) + " ETH";
-
-        const firstTicket = await contract.tickets(0, 0);
-        document.getElementById('firstTicket').innerText = firstTicket?.buyer || "No ticket yet";
-    } catch (err) {
-        console.error("Error updating round info:", err);
-    }
-}
-
-async function buyTicket() {
-    if (!contract) {
-        alert("Connect wallet first!");
-        return;
-    }
-
-    try {
-        const chosenNumber = parseInt(document.getElementById('ticketNumber').value);
-        const price = await contract.ticketPrice();
-
-        const tx = await contract.buyTicket(chosenNumber, { value: price });
-        await tx.wait();
-
-        alert("Ticket bought successfully!");
-        await updateRoundInfo();
-    } catch (err) {
-        console.error("buyTicket error:", err);
-    }
-}
