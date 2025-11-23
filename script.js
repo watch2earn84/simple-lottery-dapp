@@ -1,6 +1,9 @@
-// === CONFIG ===
+// Replace with your contract address
 const CONTRACT_ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
-const CONTRACT_ABI = [ /* [
+
+// Paste your ABI here (the one you provided earlier)
+const ABI = [
+  // [
 	{
 		"inputs": [
 			{
@@ -397,21 +400,22 @@ const CONTRACT_ABI = [ /* [
 		"stateMutability": "view",
 		"type": "function"
 	}
-] */ ];
+]
+];
 
-let provider, signer, contract;
+// Global variables
+let provider;
+let signer;
+let contract;
 
-// === DOM ELEMENTS ===
-const roundIdDisplay = document.getElementById("roundIdDisplay");
-const priceDisplay = document.getElementById("priceDisplay");
-const firstTicketDisplay = document.getElementById("firstTicketDisplay");
-const chosenNumberInput = document.getElementById("chosenNumberInput");
-const buyBtn = document.getElementById("buyBtn");
-const checkFirstBtn = document.getElementById("checkFirstBtn");
-const connectBtn = document.getElementById("connectBtn");
-const walletStatus = document.getElementById("walletStatus");
+// Wait for the DOM to load
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('connectWallet').addEventListener('click', connectWallet);
+    document.getElementById('buyTicket').addEventListener('click', buyTicket);
+    document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
+});
 
-// === CONNECT WALLET ===
+// Connect MetaMask wallet
 async function connectWallet() {
     try {
         if (!window.ethereum) {
@@ -419,62 +423,55 @@ async function connectWallet() {
             return;
         }
 
-        // Initialize provider and signer
-        provider = new ethers.providers.Web3Provider(window.ethereum);
+        provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
+        signer = await provider.getSigner();
 
-        // Initialize contract
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-        const userAddress = await signer.getAddress();
-        walletStatus.textContent = `Wallet: ${userAddress}`;
-
+        alert("Wallet connected!");
         await updateRoundInfo();
     } catch (err) {
-        console.error("connectWallet error:", err);
-        alert("Error connecting wallet. See console.");
+        console.error("Wallet connection error:", err);
     }
 }
 
-// === UPDATE ROUND INFO ===
+// Update round info and ticket price
 async function updateRoundInfo() {
-    try {
-        const roundId = await contract.roundId();
-        const ticketPrice = await contract.ticketPrice();
-        const firstTicket = await contract.tickets(0, 0);
+    if (!contract) return;
 
-        roundIdDisplay.textContent = roundId.toString();
-        priceDisplay.textContent = ethers.formatEther(ticketPrice) + " ETH";
-        firstTicketDisplay.textContent = firstTicket.buyer !== ethers.ZeroAddress ? firstTicket.buyer : "None";
+    try {
+        const round = await contract.roundId();
+        const price = await contract.ticketPrice();
+
+        document.getElementById('roundId').innerText = round.toString();
+        document.getElementById('ticketPrice').innerText = ethers.formatEther(price) + " ETH";
+
+        // Load first ticket if exists
+        const firstTicket = await contract.tickets(0, 0);
+        document.getElementById('firstTicket').innerText = firstTicket ? firstTicket.buyer : "No ticket yet";
     } catch (err) {
         console.error("Error updating round info:", err);
     }
 }
 
-// === BUY TICKET ===
+// Buy a ticket
 async function buyTicket() {
+    if (!contract) {
+        alert("Connect wallet first!");
+        return;
+    }
+
     try {
-        const number = chosenNumberInput.value;
+        const chosenNumber = parseInt(document.getElementById('ticketNumber').value);
         const price = await contract.ticketPrice();
 
-        const tx = await contract.buyTicket(number, { value: price });
+        const tx = await contract.buyTicket(chosenNumber, { value: price });
         await tx.wait();
+
         alert("Ticket bought successfully!");
         await updateRoundInfo();
     } catch (err) {
         console.error("buyTicket error:", err);
-        alert("Error buying ticket. See console.");
     }
 }
-
-// === CHECK FIRST TICKET ===
-async function checkFirstTicket() {
-    await updateRoundInfo();
-    alert("First ticket buyer: " + firstTicketDisplay.textContent);
-}
-
-// === EVENT LISTENERS ===
-connectBtn.addEventListener("click", connectWallet);
-buyBtn.addEventListener("click", buyTicket);
-checkFirstBtn.addEventListener("click", checkFirstTicket);
