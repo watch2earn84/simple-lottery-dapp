@@ -1,44 +1,91 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Chain Lottery DApp</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Ethers.js UMD for browser -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Base Lottery — Pool</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Ethers UMD (for when you add ABI + contract) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.umd.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Base Chain Lottery</h1>
-
-        <!-- Wallet Connection -->
-        <button id="connectWalletBtn">Connect Wallet</button>
-        <div id="walletStatus"></div>
-
-        <!-- Round Info -->
-        <div class="info">
-            <p id="roundInfo">Round ID: Loading...</p>
-            <p id="ticketPriceInfo">Ticket Price: Loading...</p>
-            <p id="ticketsCountInfo">Tickets Sold: Loading...</p>
-        </div>
-
-        <!-- Buy Ticket -->
-        <div class="buy-ticket">
-            <input id="chosenNumberInput" type="number" placeholder="Enter your number" min="1">
-            <button id="buyTicketBtn">Buy Ticket</button>
-        </div>
-
-        <!-- Pick Winner (optional, admin only) -->
-        <div class="admin-controls">
-            <button id="pickWinnerBtn">Pick Winner</button>
-        </div>
-
-        <!-- Notifications / Messages -->
-        <div id="messages"></div>
+  <header class="topbar">
+    <div class="brand">Base Lottery</div>
+    <div class="wallet">
+      <button id="connectWalletBtn" class="btn small">Connect Wallet</button>
+      <div id="walletAddr" class="addr">Not connected</div>
     </div>
+  </header>
 
-    <!-- Your script -->
-    <script src="script.js"></script>
+  <main class="main">
+    <section class="card summary">
+      <div class="left">
+        <h2>Round <span id="roundId">#—</span></h2>
+        <p class="muted">Ticket (number): 0000 — 9999</p>
+        <div class="price-row">
+          <div>Ticket Price</div>
+          <div id="ticketPrice">— ETH</div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="pool">
+          <div class="pool-label">Pool Progress</div>
+          <div class="progress-wrap">
+            <div id="progressBar" class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+            <div class="progress-meta">
+              <div id="ticketsSold">0</div>
+              <div id="maxTickets">/ 1000 tickets</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card chooser">
+      <h3>Pick your 4-digit number</h3>
+
+      <div class="number-picker">
+        <button class="num-btn" id="decBtn">−</button>
+        <input id="numberInput" type="number" min="0" max="9999" value="0" />
+        <button class="num-btn" id="incBtn">+</button>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <!-- quick keypad fills -->
+        <button class="key">0000</button>
+        <button class="key">1234</button>
+        <button class="key">4321</button>
+        <button class="key">9999</button>
+        <button class="key">1111</button>
+        <button class="key">2025</button>
+      </div>
+
+      <div class="actions">
+        <button id="buyBtn" class="btn primary large">Buy Ticket</button>
+        <button id="pickWinnerBtn" class="btn disabled" disabled>Pick Winner (disabled)</button>
+      </div>
+
+      <p class="note">When the round closes the winner will be selected via Chainlink VRF (on-chain).</p>
+    </section>
+
+    <section class="card tickets">
+      <h3>Latest tickets (live)</h3>
+      <ul id="ticketsList" class="ticket-list">
+        <!-- items appended here -->
+      </ul>
+    </section>
+
+    <section class="card winner">
+      <h3>Last winner</h3>
+      <div id="lastWinner">—</div>
+      <div id="lastPayout" class="muted">—</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>0 — 9999 tickets. Pool fills as tickets sold. Pick winner automatically via VRF (recommended).</small>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
