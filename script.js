@@ -1,17 +1,9 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // --- Element references ---
-    const connectBtn = document.getElementById("connectWalletBtn");
-    const buyBtn = document.getElementById("buyTicketBtn");
-    const roundInfo = document.getElementById("roundInfo");
-    const ticketPriceInfo = document.getElementById("ticketPriceInfo");
-    const ticketsCountInfo = document.getElementById("ticketsCountInfo");
-    const chosenNumberInput = document.getElementById("chosenNumberInput");
+// script.js — UI + contract integration hooks
 
-    if (!connectBtn) return console.error("connectWalletBtn not found!");
-
-    let provider, signer, contract;
-    const contractAddress = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
-    const contractAbi = [
+// ---------- CONFIG (replace with your own) ----------
+const CONTRACT_ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
+// PASTE your ABI array below (or leave empty to use UI-only demo)
+const CONTRACT_ABI = [
 	{
 		"inputs": [
 			{
@@ -410,93 +402,225 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 ]
 
-    // --- Connect Wallet ---
-    async function connectWallet() {
-        try {
-            if (!window.ethereum) return alert("MetaMask not installed!");
+// ---------- DOM ----------
+const connectWalletBtn = document.getElementById('connectWalletBtn');
+const walletAddrEl = document.getElementById('walletAddr');
 
-            provider = new ethers.BrowserProvider(window.ethereum);
-            const accounts = await provider.send("eth_requestAccounts", []);
-            signer = await provider.getSigner();
-            const walletAddress = accounts[0];
+const roundIdEl = document.getElementById('roundId');
+const ticketPriceEl = document.getElementById('ticketPrice');
+const ticketsSoldEl = document.getElementById('ticketsSold');
+const maxTicketsEl = document.getElementById('maxTickets');
+const progressFillEl = document.getElementById('progressFill');
 
-            connectBtn.textContent = `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
-            connectBtn.disabled = true;
+const numberInput = document.getElementById('numberInput');
+const decBtn = document.getElementById('decBtn');
+const incBtn = document.getElementById('incBtn');
+const keypad = document.getElementById('keypad');
 
-            // Initialize contract
-            contract = new ethers.Contract(contractAddress, contractAbi, signer);
+const buyBtn = document.getElementById('buyBtn');
+const pickWinnerBtn = document.getElementById('pickWinnerBtn');
 
-            // Load initial round info
-            await updateRoundInfo();
-        } catch (err) {
-            console.error("Wallet connection error:", err);
-            alert("Failed to connect wallet");
-        }
+const ticketsList = document.getElementById('ticketsList');
+const lastWinnerEl = document.getElementById('lastWinner');
+const lastPayoutEl = document.getElementById('lastPayout');
+
+// ---------- State ----------
+let provider = null;
+let signer = null;
+let contract = null;
+
+let uiState = {
+  roundId: 1,
+  ticketPriceWei: "0", // BigInt-like or string
+  ticketsSold: 0,
+  maxTickets: 1000,
+  tickets: [], // { index, buyer, number }
+  lastWinner: null
+};
+
+// ---------- Helpers ----------
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function pad4(n){ return String(n).padStart(4,'0'); }
+function toPercent(part, total){ return total === 0 ? 0 : Math.round((part/total)*100); }
+
+// ---------- UI: render pool progress & tickets ----------
+function renderPool(){
+  roundIdEl.textContent = `#${uiState.roundId}`;
+  ticketPriceEl.textContent = uiState.ticketPriceWei === "0" ? "—" : `${uiState.ticketPriceWei} ETH`;
+  ticketsSoldEl.textContent = uiState.ticketsSold;
+  maxTicketsEl.textContent = `/ ${uiState.maxTickets} tickets`;
+  const pct = toPercent(uiState.ticketsSold, uiState.maxTickets);
+  progressFillEl.style.width = `${pct}%`;
+  // tickets list
+  ticketsList.innerHTML = "";
+  uiState.tickets.slice().reverse().slice(0,50).forEach(t=>{
+    const li = document.createElement('li');
+    li.className = 'ticket-item';
+    li.innerHTML = `<span>#${t.index} • ${pad4(t.number)}</span><span class="muted">${t.buyer}</span>`;
+    ticketsList.appendChild(li);
+  });
+  // last winner
+  if(uiState.lastWinner){
+    lastWinnerEl.textContent = `${uiState.lastWinner.address} (round ${uiState.lastWinner.round})`;
+    lastPayoutEl.textContent = `${uiState.lastWinner.payout} ETH`;
+  } else {
+    lastWinnerEl.textContent = '—';
+    lastPayoutEl.textContent = '—';
+  }
+}
+
+// ---------- Demo initialization (simulated data) ----------
+function initDemo(){
+  uiState.roundId = 7;
+  uiState.ticketPriceWei = "0.01";
+  uiState.maxTickets = 1000;
+  uiState.ticketsSold = 320;
+  // sample tickets
+  uiState.tickets = [];
+  for(let i=0;i<uiState.ticketsSold;i++){
+    uiState.tickets.push({ index: i, buyer: `0x${(Math.random().toString(16)+'000000').slice(2,10)}`, number: Math.floor(Math.random()*10000) });
+  }
+  uiState.lastWinner = { address: "0xAbc...1234", payout: "3.2", round: 6 };
+  renderPool();
+}
+
+// ---------- Wallet & Contract integration ----------
+async function connectWallet(){
+  if(!window.ethereum){ alert("Please install MetaMask"); return; }
+  try{
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    walletAddrEl.textContent = `${addr.slice(0,6)}...${addr.slice(-4)}`;
+    connectWalletBtn.textContent = "Connected";
+    connectWalletBtn.disabled = true;
+
+    // If ABI provided, init contract
+    if(Array.isArray(CONTRACT_ABI) && CONTRACT_ABI.length>0 && CONTRACT_ADDRESS && CONTRACT_ADDRESS.startsWith('0x')){
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      // fetch live state if possible
+      try{
+        const rid = await contract.roundId();
+        const price = await contract.ticketPrice();
+        const maxTickets = await contract.maxTickets();
+        const sold = await contract.ticketsCount(rid);
+        const ridNum = Number(rid);
+        uiState.roundId = ridNum;
+        uiState.ticketPriceWei = ethers.formatEther(price);
+        uiState.maxTickets = Number(maxTickets);
+        uiState.ticketsSold = Number(sold);
+        // optionally fetch latest tickets (first N)
+        // NOTE: fetching tickets one by one can be expensive — optimize server-side if needed
+        renderPool();
+        // listen to events
+        listenToContractEvents();
+      }catch(e){
+        console.warn("Failed to pull live contract state:", e);
+      }
     }
 
-    // --- Update Round Info ---
-    async function updateRoundInfo() {
-        try {
-            if (!contract) return;
+  }catch(e){
+    console.error(e);
+    alert("Connection error: " + (e?.message || e));
+  }
+}
 
-            const roundId = await contract.roundId();
-            const ticketPrice = await contract.ticketPrice();
-            const totalTickets = await contract.ticketsCount(roundId);
-
-            roundInfo.textContent = `Round ID: ${roundId}`;
-            ticketPriceInfo.textContent = `Ticket Price: ${ethers.formatEther(ticketPrice)} ETH`;
-            ticketsCountInfo.textContent = `Tickets Sold: ${totalTickets}`;
-        } catch (err) {
-            console.error("Error updating round info:", err);
-        }
+// ---------- Buy ticket (UI wired to contract or demo) ----------
+async function buyTicket(){
+  const chosen = clamp(Number(numberInput.value), 0, 9999);
+  if(isNaN(chosen)) return alert("Enter a number 0–9999");
+  // If contract connected call buyTicket
+  if(contract){
+    try{
+      // ticketPrice from contract
+      const price = await contract.ticketPrice();
+      const tx = await contract.buyTicket(chosen, { value: price });
+      await tx.wait();
+      // update UI: increment sold and add ticket (client-side)
+      const idx = uiState.ticketsSold;
+      uiState.ticketsSold += 1;
+      uiState.tickets.push({ index: idx, buyer: (await signer.getAddress()), number: chosen });
+      renderPool();
+      alert("Ticket purchased on-chain. TX mined.");
+      return;
+    }catch(err){
+      console.error("buy error", err);
+      alert("Buy failed: " + (err?.message || err));
+      return;
     }
+  }
+  // Demo fallback: simulate buy
+  const idx = uiState.ticketsSold;
+  uiState.ticketsSold += 1;
+  uiState.tickets.push({ index: idx, buyer: `0xDemo${Math.random().toString(16).slice(2,8)}`, number: chosen });
+  renderPool();
+  alert(`Demo: bought ticket #${idx} for ${pad4(chosen)}`);
+}
 
-    // --- Buy Ticket ---
-    async function buyTicket() {
-        try {
-            if (!contract) return;
+// ---------- Event listeners on contract (real-time UI) ----------
+function listenToContractEvents(){
+  if(!contract) return;
+  // TicketBought(roundId, ticketIndex, buyer)
+  try{
+    contract.on('TicketBought', (rid, ticketIndex, buyer, event) => {
+      // only update if same round
+      if(Number(rid) === uiState.roundId){
+        uiState.ticketsSold = Number(uiState.ticketsSold) + 1;
+        uiState.tickets.push({ index: Number(ticketIndex), buyer, number: 0 /* number not in event — update if event includes it*/});
+        renderPool();
+      }
+    });
+    // WinnerPaid(roundId, winner, payout, fee)
+    contract.on('WinnerPaid', (rid, winner, payout, fee) => {
+      uiState.lastWinner = { address: winner, payout: ethers.formatEther(payout), round: Number(rid) };
+      // start new round: increment roundId and reset tickets
+      uiState.roundId = uiState.roundId + 1;
+      uiState.ticketsSold = 0;
+      uiState.tickets = [];
+      renderPool();
+      // nice visual celebration
+      celebrateWinner();
+    });
+    // RoundStarted / RoundClosed can be handled similarly
+  }catch(e){
+    console.warn('event attach failed', e);
+  }
+}
 
-            const chosenNumber = parseInt(chosenNumberInput.value);
-            if (isNaN(chosenNumber) || chosenNumber < 1) {
-                return alert("Enter a valid number for your ticket!");
-            }
+// ---------- small celebration ----------
+function celebrateWinner(){
+  // simple visual; you can integrate confetti library
+  const orig = document.body.style.background;
+  document.body.style.transition = "background 0.8s";
+  document.body.style.background = "linear-gradient(180deg,#07324f,#052033)";
+  setTimeout(()=> document.body.style.background = orig, 1200);
+}
 
-            const ticketPrice = await contract.ticketPrice();
-            const tx = await contract.buyTicket(chosenNumber, { value: ticketPrice });
-            await tx.wait();
-            console.log("Ticket bought!");
-
-            // Update round info after purchase
-            await updateRoundInfo();
-            alert("Ticket purchased successfully!");
-        } catch (err) {
-            console.error("buyTicket error:", err);
-            alert("Transaction failed. See console for details.");
-        }
-    }
-
-    // --- Pick Winner (Chainlink VRF simulation for testnet) ---
-    async function pickWinner() {
-        try {
-            if (!contract) return;
-            // For testnet, simulate randomness or call VRF-enabled function
-            const totalTickets = await contract.ticketsCount(await contract.roundId());
-            if (totalTickets === 0) return alert("No tickets sold yet!");
-
-            const winnerIndex = Math.floor(Math.random() * totalTickets);
-            const tx = await contract.pickWinner(winnerIndex, true); // true = use pseudo-random for testing
-            await tx.wait();
-            alert("Winner picked!");
-            await updateRoundInfo();
-        } catch (err) {
-            console.error("pickWinner error:", err);
-        }
-    }
-
-    // --- Event Listeners ---
-    connectBtn.addEventListener("click", connectWallet);
-    if (buyBtn) buyBtn.addEventListener("click", buyTicket);
-
-    // Optional: auto-update round info every 15s
-    setInterval(updateRoundInfo, 15000);
+// ---------- number picker handlers ----------
+decBtn.addEventListener('click', ()=>{
+  numberInput.value = clamp(Number(numberInput.value) - 1, 0, 9999);
 });
+incBtn.addEventListener('click', ()=>{
+  numberInput.value = clamp(Number(numberInput.value) + 1, 0, 9999);
+});
+// keypad quick set
+keypad.addEventListener('click', (e)=>{
+  if(e.target && e.target.matches('.key')){
+    numberInput.value = clamp(Number(e.target.textContent.trim()), 0, 9999);
+  }
+});
+
+// buy button
+buyBtn.addEventListener('click', buyTicket);
+
+// connect wallet btn
+connectWalletBtn.addEventListener('click', connectWallet);
+
+// pick winner button is intentionally disabled/hidden for transparency
+pickWinnerBtn.addEventListener('click', ()=>{
+  alert("Pick winner is disabled in UI. Winner is selected automatically via VRF or operator.");
+});
+
+// ---------- init ----------
+initDemo();
