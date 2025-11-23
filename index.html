@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Base Chain Lottery DApp</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -15,17 +14,21 @@
             <p>Round ID: <span id="roundIdDisplay">Loading...</span></p>
             <p>Ticket Price: <span id="priceDisplay">Loading...</span></p>
             <p>First Ticket: <span id="firstTicketDisplay">Loading...</span></p>
+            <p id="walletStatus">Wallet: Not Connected</p>
         </div>
 
         <div class="actions">
             <input type="number" id="chosenNumberInput" placeholder="Enter your number">
             <button id="buyBtn">Buy Ticket</button>
             <button id="checkFirstBtn">Check First Ticket</button>
+            <button id="connectBtn">Connect Wallet</button>
         </div>
 
         <p class="footer">Connect MetaMask to interact with the contract on Base Sepolia</p>
     </div>
 
+    <!-- Use the browser-ready UMD version of ethers -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.0/dist/ethers.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
