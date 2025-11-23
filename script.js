@@ -418,18 +418,40 @@ async function connectWallet() {
             return;
         }
 
+        // Initialize provider and signer
         provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
 
+        // Initialize contract
         contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-        alert("Wallet connected!");
+        // Get connected account
+        const accounts = await provider.listAccounts();
+        if (accounts.length > 0) {
+            const shortAddress = `${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`;
+
+            // Update the button text
+            const connectButton = document.getElementById('connectWallet');
+            connectButton.innerText = `Connected: ${shortAddress}`;
+            connectButton.disabled = true; // optional: prevent clicking again
+
+            // Optional: show address somewhere else in HTML
+            const statusEl = document.getElementById('walletStatus');
+            if(statusEl){
+                statusEl.innerText = `Wallet: ${accounts[0]}`;
+            }
+        }
+
+        // Refresh round info after connecting
         await updateRoundInfo();
+
     } catch (err) {
         console.error("Wallet connection error:", err);
+        alert("Failed to connect wallet. See console for details.");
     }
 }
+
 
 async function updateRoundInfo() {
     if (!contract) return;
