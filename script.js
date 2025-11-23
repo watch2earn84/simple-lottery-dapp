@@ -3,7 +3,6 @@ const CONTRACT_ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
 
 // Paste your ABI here (the one you provided earlier)
 const ABI = [
-  // [
 	{
 		"inputs": [
 			{
