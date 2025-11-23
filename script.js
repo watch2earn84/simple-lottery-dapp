@@ -1,8 +1,8 @@
 // Replace with your contract address
 const CONTRACT_ADDRESS = "0x6c7100b1cfa8cf5e006bd5c1047fa917ddedf56e";
 
-// Paste your ABI here (the one you provided earlier)
-const ABI = [
+// Paste your ABI here
+const ABI =[
 	{
 		"inputs": [
 			{
@@ -399,21 +399,18 @@ const ABI = [
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+]
 
-// Global variables
 let provider;
 let signer;
 let contract;
 
-// Wait for the DOM to load
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     document.getElementById('buyTicket').addEventListener('click', buyTicket);
     document.getElementById('checkFirstTicket').addEventListener('click', updateRoundInfo);
 });
 
-// Connect MetaMask wallet
 async function connectWallet() {
     try {
         if (!window.ethereum) {
@@ -434,7 +431,6 @@ async function connectWallet() {
     }
 }
 
-// Update round info and ticket price
 async function updateRoundInfo() {
     if (!contract) return;
 
@@ -445,15 +441,13 @@ async function updateRoundInfo() {
         document.getElementById('roundId').innerText = round.toString();
         document.getElementById('ticketPrice').innerText = ethers.formatEther(price) + " ETH";
 
-        // Load first ticket if exists
         const firstTicket = await contract.tickets(0, 0);
-        document.getElementById('firstTicket').innerText = firstTicket ? firstTicket.buyer : "No ticket yet";
+        document.getElementById('firstTicket').innerText = firstTicket?.buyer || "No ticket yet";
     } catch (err) {
         console.error("Error updating round info:", err);
     }
 }
 
-// Buy a ticket
 async function buyTicket() {
     if (!contract) {
         alert("Connect wallet first!");
